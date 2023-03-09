@@ -64,12 +64,12 @@ func queryUserByEmail(email string, database *mongo.Database, ctx context.Contex
 }
 
 func insertUser(registrationInfo RegistrationInfo, database *mongo.Database, ctx context.Context) User {
-	passwordHashedBcrypt := passwordHashing(registrationInfo.Password)
+	passwordHashed := passwordHashing(registrationInfo.Password)
 
 	userCollection := database.Collection("user")
 	insertResult, err := userCollection.InsertOne(ctx, bson.D{
 		{"email", registrationInfo.Email},
-		{"password", passwordHashedBcrypt},
+		{"password", passwordHashed},
 	})
 	if err != nil {
 		panic(err)
