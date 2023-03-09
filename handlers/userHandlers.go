@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"practice-go/repository"
+	"practice-go/models"
 )
 
 type RegistrationInfo struct {
@@ -21,22 +21,22 @@ func RegisterHandler(c *gin.Context) {
 	}
 
 	// get database connection
-	ctx, practiceGoDatabase, cancel := repository.GetDatabaseConnection("practiceGoDatabase")
+	ctx, practiceGoDatabase, cancel := models.GetDatabaseConnection("practiceGoDatabase")
 	defer cancel()
 
 	// query user from database
-	userInCollection := repository.QueryUserByEmail(registrationInfo.Email, practiceGoDatabase, ctx)
+	userInCollection := models.QueryUserByEmail(registrationInfo.Email, practiceGoDatabase, ctx)
 	if userInCollection != nil {
 		// user exists in database => 400
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User exists"})
 		return
 	}
 
-	var userDocument repository.UserInsertion = repository.UserInsertion{
+	var userDocument models.UserInsertion = models.UserInsertion{
 		Email:    registrationInfo.Email,
 		Password: registrationInfo.Password,
 	}
-	newUser := repository.InsertUser(userDocument, practiceGoDatabase, ctx)
+	newUser := models.InsertUser(userDocument, practiceGoDatabase, ctx)
 
 	c.JSON(http.StatusOK, gin.H{
 		"userId": newUser.Id,
