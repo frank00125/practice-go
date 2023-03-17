@@ -20,8 +20,13 @@ type UserInsertion struct {
 	Password string
 }
 
+func getUserCollection(database *mongo.Database) *mongo.Collection {
+	return database.Collection("user")
+}
+
 func QueryUserByEmail(email string, database *mongo.Database, ctx context.Context) *User {
-	userCollection := database.Collection("user")
+	userCollection := getUserCollection(database)
+
 	var userDocumentRaw primitive.D
 	err := userCollection.FindOne(ctx, bson.D{
 		{"email", email},
@@ -39,12 +44,11 @@ func QueryUserByEmail(email string, database *mongo.Database, ctx context.Contex
 }
 
 func InsertUser(registrationInfo UserInsertion, database *mongo.Database, ctx context.Context) User {
-	passwordHashed := utils.PasswordHashing(registrationInfo.Password)
+	userCollection := getUserCollection(database)
 
-	userCollection := database.Collection("user")
 	insertResult, err := userCollection.InsertOne(ctx, bson.D{
 		{"email", registrationInfo.Email},
-		{"password", passwordHashed},
+		{"password", utils.PasswordHashing(registrationInfo.Password)},
 	})
 	if err != nil {
 		panic(err)

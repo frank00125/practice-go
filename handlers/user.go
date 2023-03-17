@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"practice-go/models"
+	"practice-go/utils"
 )
 
 type RegistrationInfo struct {
@@ -38,8 +39,11 @@ func RegisterHandler(c *gin.Context) {
 	}
 	newUser := models.InsertUser(userDocument, practiceGoDatabase, ctx)
 
+	// generate jwt
+	token := utils.GenerateJWT(newUser.Id)
+
 	c.JSON(http.StatusOK, gin.H{
-		"userId": newUser.Id,
+		"token": token,
 	})
 }
 

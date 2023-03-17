@@ -4,6 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"practice-go/handlers"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
