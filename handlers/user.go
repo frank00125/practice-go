@@ -14,6 +14,11 @@ type RegistrationInfo struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
+type LoginInfo struct {
+	Email    string `json:"email"  binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+}
+
 func RegisterHandler(c *gin.Context) {
 	var registrationInfo RegistrationInfo
 	if err := c.ShouldBindJSON(&registrationInfo); err != nil {
@@ -48,5 +53,28 @@ func RegisterHandler(c *gin.Context) {
 }
 
 func LoginHandler(c *gin.Context) {
-	c.JSON(http.StatusNotFound, "Not Found")
+	var loginInfo LoginInfo
+	if err := c.ShouldBindJSON(&loginInfo); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// get database connection
+	ctx, practiceGoDatabase, cancel := models.GetDatabaseConnection("practiceGoDatabase")
+	defer cancel()
+
+	userInCollection := models.QueryUserByEmail(loginInfo.Email, practiceGoDatabase, ctx)
+	isPasswordVerified := utils.PasswordVerify(userInCollection.Password, loginInfo.Password)
+
+	if !isPasswordVerified {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
+
+	// generate jwt
+	token := utils.GenerateJWT(userInCollection.Id)
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
 }

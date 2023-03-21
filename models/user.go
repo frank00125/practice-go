@@ -11,8 +11,9 @@ import (
 )
 
 type User struct {
-	Id    string
-	Email string
+	Id       string
+	Email    string
+	Password string
 }
 
 type UserInsertion struct {
@@ -38,8 +39,9 @@ func QueryUserByEmail(email string, database *mongo.Database, ctx context.Contex
 	userDocument := userDocumentRaw.Map()
 
 	return &User{
-		Id:    userDocument["_id"].(primitive.ObjectID).Hex(),
-		Email: userDocument["email"].(string),
+		Id:       userDocument["_id"].(primitive.ObjectID).Hex(),
+		Email:    userDocument["email"].(string),
+		Password: userDocument["password"].(string),
 	}
 }
 
