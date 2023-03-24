@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -17,6 +18,12 @@ type RegistrationInfo struct {
 type LoginInfo struct {
 	Email    string `json:"email"  binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
+}
+
+func getRefreshToken(userId string) (string, time.Time) {
+	ctx, redisClient := models.GetRedisConnection()
+	defer redisClient.Conn().Close()
+	return utils.GenerateRefreshToken(userId, ctx, redisClient)
 }
 
 func RegisterHandler(c *gin.Context) {
@@ -47,8 +54,13 @@ func RegisterHandler(c *gin.Context) {
 	// generate jwt
 	token := utils.GenerateJWT(newUser.Id)
 
+	// generate refresh token
+	refreshToken, expiredAt := getRefreshToken(newUser.Id)
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
+		"token":        token,
+		"refreshToken": refreshToken,
+		"expiredAt":    expiredAt,
 	})
 }
 
@@ -74,7 +86,12 @@ func LoginHandler(c *gin.Context) {
 	// generate jwt
 	token := utils.GenerateJWT(userInCollection.Id)
 
+	// generate refresh token
+	refreshToken, expiredAt := getRefreshToken(userInCollection.Id)
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
+		"token":        token,
+		"refreshToken": refreshToken,
+		"expiredAt":    expiredAt,
 	})
 }
