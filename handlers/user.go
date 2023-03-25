@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -23,7 +24,14 @@ type LoginInfo struct {
 func getRefreshToken(userId string) (string, time.Time) {
 	ctx, redisClient := models.GetRedisConnection()
 	defer redisClient.Conn().Close()
-	return utils.GenerateRefreshToken(userId, ctx, redisClient)
+
+	refreshTokenInCache, expiredAt, error := models.GetRefreshTokenFromInMemoryDB(ctx, redisClient, userId)
+	if error != nil {
+		return utils.GenerateRefreshToken(userId, ctx, redisClient)
+	}
+
+	fmt.Println("Successfully get refresh token from redis.")
+	return refreshTokenInCache, expiredAt
 }
 
 func RegisterHandler(c *gin.Context) {

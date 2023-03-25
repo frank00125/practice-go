@@ -2,7 +2,9 @@ package utils
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -27,6 +29,10 @@ func GenerateJWT(userId string) string {
 	return tokenString
 }
 
+func GetRefreshTokenKey(userId string) string {
+	return userId + "-refresh-token"
+}
+
 func GenerateRefreshToken(userId string, ctx context.Context, redisClient *redis.Client) (string, time.Time) {
 	token := make([]byte, 32)
 	_, error := rand.Read(token)
@@ -34,7 +40,11 @@ func GenerateRefreshToken(userId string, ctx context.Context, redisClient *redis
 		panic(error)
 	}
 
-	refreshToken := base64.RawURLEncoding.EncodeToString(token)
+	hmacFunc := hmac.New(sha256.New, []byte(userId))
+	hmacFunc.Write([]byte(userId))
+
+	refreshToken := base64.URLEncoding.EncodeToString(hmacFunc.Sum(nil))
+
 	durationToExpire := time.Duration(24 * 30 * int(time.Hour))
 	userRefreshTokenKey := userId + "-refresh-token"
 	fmt.Println(userId + "-refresh-token")
