@@ -29,10 +29,6 @@ func GenerateJWT(userId string) string {
 	return tokenString
 }
 
-func GetRefreshTokenKey(userId string) string {
-	return userId + "-refresh-token"
-}
-
 func GenerateRefreshToken(userId string, ctx context.Context, redisClient *redis.Client) (string, time.Time) {
 	token := make([]byte, 32)
 	_, error := rand.Read(token)
@@ -46,9 +42,7 @@ func GenerateRefreshToken(userId string, ctx context.Context, redisClient *redis
 	refreshToken := base64.URLEncoding.EncodeToString(hmacFunc.Sum(nil))
 
 	durationToExpire := time.Duration(24 * 30 * int(time.Hour))
-	userRefreshTokenKey := userId + "-refresh-token"
-	fmt.Println(userId + "-refresh-token")
-	error = redisClient.Set(ctx, userRefreshTokenKey, refreshToken, durationToExpire).Err()
+	error = redisClient.Set(ctx, refreshToken, userId, durationToExpire).Err()
 	if error != nil {
 		panic(error)
 	}
@@ -56,4 +50,22 @@ func GenerateRefreshToken(userId string, ctx context.Context, redisClient *redis
 	expirationDate := time.Now().Add(durationToExpire)
 
 	return refreshToken, expirationDate
+}
+
+func GetJwtPayload(tokenStr string) (jwt.MapClaims, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	token, error := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+		return []byte(jwtSecret), nil
+	})
+	if error != nil {
+		return nil, error
+	}
+
+	return token.Claims.(jwt.MapClaims), nil
 }

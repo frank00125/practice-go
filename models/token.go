@@ -2,27 +2,27 @@ package models
 
 import (
 	"context"
-	"fmt"
-	"practice-go/utils"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-func GetRefreshTokenFromInMemoryDB(ctx context.Context, redisClient *redis.Client, userId string) (string, time.Time, error) {
-	refreshTokenKey := utils.GetRefreshTokenKey(userId)
-	refreshTokenInRedis, error := redisClient.Get(ctx, refreshTokenKey).Result()
-	now := time.Now().UTC()
+func GetRefreshTokenFromInMemoryDB(ctx context.Context, redisClient *redis.Client, refreshToken string) (string, time.Time, error) {
+	value, error := redisClient.Get(ctx, refreshToken).Result()
 	if error != nil {
-		return "", now, error
+		return "", time.Now(), error
 	}
 
-	ttl, error := redisClient.TTL(ctx, refreshTokenKey).Result()
+	ttl, error := redisClient.TTL(ctx, refreshToken).Result()
 	if error != nil {
-		return "", now, error
+		return "", time.Now(), error
 	}
 
-	fmt.Println(now, ttl)
+	return value, time.Now().Add(time.Duration(ttl)), nil
+}
 
-	return refreshTokenInRedis, now.Add(ttl), nil
+func RemoveRefreshTokenFromInMemoryDB(ctx context.Context, redisClient *redis.Client, refreshToken string) error {
+	_, error := redisClient.Del(ctx, refreshToken).Result()
+
+	return error
 }

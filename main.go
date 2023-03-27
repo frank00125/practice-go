@@ -11,5 +11,6 @@ func main() {
 	server := gin.Default()
 	server.POST("/register", handlers.RegisterHandler)
 	server.POST("/login", handlers.LoginHandler)
+	server.POST("/refresh-token", handlers.RefreshTokenHandler)
 	server.Run(":8000")
 }
