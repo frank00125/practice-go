@@ -14,9 +14,9 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func GenerateJWT(userId string) string {
-	jwtSecret := os.Getenv("JWT_SECRET")
+var jwtSecret string = os.Getenv("JWT_SECRET")
 
+func GenerateJWT(userId string) string {
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), jwt.MapClaims{
 		"userId": userId,
 		"exp":    time.Now().Unix() + 2*60*60,
@@ -53,7 +53,17 @@ func GenerateRefreshToken(userId string, ctx context.Context, redisClient *redis
 }
 
 func GetJwtPayload(tokenStr string) (jwt.MapClaims, error) {
-	jwtSecret := os.Getenv("JWT_SECRET")
+	token, error := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		return []byte(jwtSecret), nil
+	})
+	if error != nil {
+		return nil, error
+	}
+
+	return token.Claims.(jwt.MapClaims), nil
+}
+
+func VerifyJwt(tokenStr string) (jwt.MapClaims, error) {
 	token, error := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -66,6 +76,5 @@ func GetJwtPayload(tokenStr string) (jwt.MapClaims, error) {
 	if error != nil {
 		return nil, error
 	}
-
 	return token.Claims.(jwt.MapClaims), nil
 }
