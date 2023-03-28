@@ -116,6 +116,14 @@ func RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
+	// Check if the type of the authorization header is a bearer token
+	if !strings.HasPrefix(authorizationHeader, "Bearer ") {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Forbidden",
+		})
+		return
+	}
+
 	// Get userId from Authorization header
 	accessToken := strings.ReplaceAll(authorizationHeader, "Bearer ", "")
 	jwtPayload, error := utils.GetJwtPayload(accessToken)
